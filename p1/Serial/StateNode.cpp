@@ -2,10 +2,9 @@
 //State Node method definitions
 #include "StateNode.h"
 
-StateNode::StateNode(bool start, bool final, std::vector<std::pair<std::vector<char>, StateNode*> > transitons) {
+StateNode::StateNode(bool start, bool final) {
   this->start = start;
   this->final = final;
-  this->transitons = transitons;
 }
 
 StateNode::~StateNode() {

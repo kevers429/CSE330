@@ -15,7 +15,7 @@ class StateNode {
     std::vector<std::pair<std::vector<char>, StateNode*> > transitons;
 
   public:
-    StateNode(bool start, bool final, std::vector<std::pair<std::vector<char>, StateNode*> > transitons);
+    StateNode(bool start, bool final);
     ~StateNode();
     bool getStart();
     bool getFinal();

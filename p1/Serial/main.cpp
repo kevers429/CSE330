@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     files[i] = argv[i + 2];
   regex = catExpand(regex);
   regex = postFix(regex);
+  cout << regex << endl;
   NFA* nfa = new NFA(regex);
   return 0;
 }
