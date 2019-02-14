@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
   regex = postFix(regex);
   cout << regex << endl;
   NFA* nfa = new NFA(regex);
+  nfa->PrintTable();
   return 0;
 }
 

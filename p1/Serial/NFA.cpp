@@ -3,17 +3,20 @@
 
 #include "NFA.h"
 #include <stack>
+#include <iostream>
 
 NFA::NFA() {
-  this->initState = NULL;
+  this->states = std::vector<StateNode*> {};
+  this->stateNames = std::set<int> {};
+  this->startState = NULL;
   this->finalState = NULL;
 }
 
 NFA::NFA(std::string regex) {
   std::stack<NFA*> nfaStack;
-  NFA* a = new NFA();
-  NFA* b = new NFA();
   while(regex != "") {
+    NFA* a = new NFA();
+    NFA* b = new NFA();
     char token = regex[0];
     regex.erase(0,1);
     if(isInAlphabet(token))
@@ -38,60 +41,108 @@ NFA::NFA(std::string regex) {
       nfaStack.push(Star(a));
     }
   }
-  initState = nfaStack.top()->initState;
+  states = nfaStack.top()->states;
+  stateNames = nfaStack.top()->stateNames;
+  transitionTable = nfaStack.top()->transitionTable;
+  startState = nfaStack.top()->startState;
   finalState = nfaStack.top()->finalState;
 }
 
+void NFA::PrintTable() {
+  for(std::vector<StateNode*>::iterator i = states.begin(); i != states.end(); ++i) {
+    std::cout << "st: " << (*i)->getID() << ", ";
+    for(std::set<char>::iterator j = alphabet.begin(); j != alphabet.end(); ++j) {
+      std::map<std::pair<StateNode*, char>, std::vector<StateNode*> >::iterator k = transitionTable.find(std::make_pair(*i, *j));
+      if(k != transitionTable.end()) {
+        std::cout << "{";
+        for(std::vector<StateNode*>::iterator l = transitionTable[std::make_pair(*i, *j)].begin(); l != transitionTable[std::make_pair(*i, *j)].end(); ++l) {
+          std::cout << (*l)->getID() << " ";
+        }
+        std::cout << "}";
+      } else {
+        std::cout << " ";
+      }
+    }
+    std::cout << std::endl;
+  }
+}
+
 bool NFA::isInAlphabet(char c) {
-  if((c >= 49 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c == 46)
-    return true;
-  return false;
+  return alphabet.count(c);
+}
+
+int NFA::newID(NFA* a) {
+  if(!a->stateNames.empty())
+    return *(a->stateNames.insert(*a->stateNames.rbegin() + 1).first);
+  return *(a->stateNames.insert(0).first);
 }
 
 NFA* NFA::buildSingle(char c) {
-  StateNode* st0 = new StateNode(0, 1);
-  StateNode* st1 = new StateNode(1, 0);
-  st0->addTransition(c, st1);
-  initState = st0;
-  finalState = st1;
-  return this;
+  NFA* t = new NFA();
+  StateNode* st0 = new StateNode(1, 0, newID(t));
+  StateNode* st1 = new StateNode(0, 1, newID(t));
+  t->states.push_back(st0);
+  t->states.push_back(st1);
+  t->transitionTable.insert(std::make_pair(std::make_pair(st0, c), std::vector<StateNode*> {st1}));
+  t->startState = st0;
+  t->finalState = st1;
+  return t;
+}
+
+void NFA::Glob(NFA* src, NFA* tar) {
+  for(std::vector<StateNode*>::iterator it = src->states.begin(); it != src->states.end(); it++) {
+    (*it)->setID(newID(tar));
+    tar->states.push_back(*it);
+    tar->stateNames.insert((*it)->getID());
+  }
+  tar->transitionTable.insert(src->transitionTable.begin(), src->transitionTable.end());
 }
 
 NFA* NFA::Union(NFA* a, NFA* b) {
-  a->initState->setStart(false);
-  b->initState->setStart(false);
-  StateNode* s = new StateNode(1,0);
-  s->addTransition('\0',a->initState);
-  s->addTransition('\0',b->initState);
-  StateNode* f = new StateNode(0,1);
+  NFA* t = new NFA();
+  Glob(a, t);
+  Glob(b, t);
+  a->startState->setStart(false);
+  b->startState->setStart(false);
+  StateNode* s = new StateNode(1, 0, newID(t));
+  t->transitionTable.insert(std::make_pair(std::make_pair(s, '\0'), std::vector<StateNode*> {a->startState, b->startState}));
+  t->startState = s;
+  t->states.push_back(s);
   a->finalState->setFinal(false);
-  a->finalState->addTransition('\0', f);
   b->finalState->setFinal(false);
-  b->finalState->addTransition('\0', f);
-  initState = s;
-  finalState = f;
-  return this;
+  StateNode* f = new StateNode(0, 1, newID(t));
+  t->transitionTable.insert(std::make_pair(std::make_pair(a->finalState, '\0'), std::vector<StateNode*> {f}));
+  t->transitionTable.insert(std::make_pair(std::make_pair(b->finalState, '\0'), std::vector<StateNode*> {f}));
+  t->finalState = f;
+  t->states.push_back(f);
+  return t;
 }
 
 NFA* NFA::Cat(NFA* a, NFA* b) {
-  initState = a->initState;
-  b->initState->setStart(false);
-  finalState = b->finalState;
-  a->finalState = b->initState;
-  return this;
+  NFA* t = new NFA();
+  Glob(a, t);
+  Glob(b, t);
+  t->startState = a->startState;
+  a->finalState->setFinal(false);
+  t->finalState = b->finalState;
+  b->startState->setStart(false);
+  t->transitionTable.insert(std::make_pair(std::make_pair(a->finalState, '\0'), std::vector<StateNode*> {b->startState}));
+  return t;
 }
 
 NFA* NFA::Star(NFA* a) {
-  a->initState->setStart(false);
-  StateNode* s = new StateNode(1,0);
-  StateNode* f = new StateNode(0,1);
-  s->addTransition('\0',f);
-  s->addTransition('\0',a->initState);
-  a->finalState->addTransition('\0', a->initState);
-  a->finalState->addTransition('\0', f);
-  initState = s;
-  finalState = f;
-  return this;
+  NFA* t = new NFA();
+  Glob(a, t);
+  a->startState->setStart(false);
+  StateNode* s = new StateNode(1, 0, newID(t));
+  StateNode* f = new StateNode(0, 1, newID(t));
+  t->transitionTable.insert(std::make_pair(std::make_pair(s, '\0'), std::vector<StateNode*> {f, a->startState}));
+  t->transitionTable.insert(std::make_pair(std::make_pair(a->finalState, '\0'), std::vector<StateNode*> {f, a->startState}));
+  t->startState = s;
+  t->finalState = f;
+  t->states.push_back(s);
+  t->states.push_back(f);
+  return t;
 }
 
 NFA::~NFA() {

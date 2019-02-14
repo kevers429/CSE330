@@ -12,19 +12,16 @@ class StateNode {
   protected:
     bool start;
     bool final;
-    std::vector<std::pair<std::vector<char>, StateNode*> > transitons;
+    int id;
 
   public:
-    StateNode(bool start, bool final);
-    ~StateNode();
+    StateNode(bool start, bool final, int id);
     bool getStart();
     bool getFinal();
+    int getID();
     void setStart(bool start);
     void setFinal(bool final);
-    void addTransition(char c, StateNode* dest);
-    void removeTransition(char c, StateNode* dest);
-    void removeAllTransitions();
-    StateNode* Successor(char c);
+    void setID(int id);
 };
 
 #endif
