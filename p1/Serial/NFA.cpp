@@ -48,6 +48,64 @@ NFA::NFA(std::string regex) {
   finalState = nfaStack.top()->finalState;
 }
 
+bool NFA::isIn(StateNode* s, std::vector<StateNode*> v) {
+  for(std::vector<StateNode*>::iterator i = v.begin(); i != v.end(); ++i) {
+    if((*i)->getID() == s->getID())
+      return true;
+  }
+  return false;
+}
+
+std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
+  std::queue<StateNode*> fringe;
+  fringe.push(s);
+  std::vector<StateNode*> visited;
+  while(!fringe.empty()) {
+    StateNode* state = fringe.front();
+    fringe.pop();
+    if(!isIn(state, visited)) {
+      visited.push_back(state);
+      if(transitionTable.find(std::make_pair(state, '\0')) != transitionTable.end()) {
+        for(std::vector<StateNode*>::iterator i = transitionTable[std::make_pair(state, '\0')].begin(); i != transitionTable[std::make_pair(state, '\0')].end(); ++i) {
+          if(!isIn(*i, visited))
+            fringe.push(*i);
+        }
+      }
+    }
+  }
+  return visited;
+}
+
+std::vector<StateNode*> NFA::Combine(std::vector<StateNode*> a, std::vector<StateNode*> b) {
+  std::vector<StateNode*> result = a;
+  for(std::vector<StateNode*>::iterator i = b.begin(); i != b.end(); ++i) {
+    if(!isIn(*i, a))
+      result.push_back(*i);
+  }
+  return result;
+}
+
+std::vector<StateNode*> NFA::Move(StateNode* s, char c) {
+  std::vector<StateNode*> visited;
+  if(transitionTable.find(std::make_pair(s, c)) != transitionTable.end()) {
+    visited = Combine(visited, transitionTable[std::make_pair(s, c)]);
+    for(std::vector<StateNode*>::iterator i = transitionTable[std::make_pair(s, c)].begin(); i != transitionTable[std::make_pair(s, c)].end(); ++i) {
+      visited = Combine(visited, epsClosure(*i));
+    }
+  }
+  std::vector<StateNode*> epsOfS = epsClosure(s);
+  if(transitionTable.find(std::make_pair(s, '\0')) != transitionTable.end()) {
+    for(std::vector<StateNode*>::iterator i = epsOfS.begin(); i != epsOfS.end(); ++i) {
+      if(transitionTable.find(std::make_pair(*i, c)) != transitionTable.end()) {
+        visited = Combine(visited, transitionTable[std::make_pair(*i, c)]);
+        for(std::vector<StateNode*>::iterator j = transitionTable[std::make_pair(*i, c)].begin(); j != transitionTable[std::make_pair(*i, c)].end(); ++j)
+          visited = Combine(visited, epsClosure(*j));
+      }
+    }
+  }
+  return visited;
+}
+
 void NFA::PrintTable() {
   for(std::vector<StateNode*>::iterator i = states.begin(); i != states.end(); ++i) {
     std::cout << "st: " << (*i)->getID() << ", ";
@@ -65,6 +123,13 @@ void NFA::PrintTable() {
     }
     std::cout << std::endl;
   }
+}
+
+void NFA::PrintStates(std::vector<StateNode*> s) {
+  for(std::vector<StateNode*>::iterator i = s.begin(); i != s.end(); ++i) {
+    std::cout << (*i)->getID() << " ";
+  }
+  std::cout << std::endl;
 }
 
 bool NFA::isInAlphabet(char c) {

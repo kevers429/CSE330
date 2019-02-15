@@ -8,6 +8,8 @@
 #include <string>
 #include <map>
 #include <set>
+#include <queue>
+#include <algorithm>
 
 class NFA {
   protected:
@@ -26,11 +28,17 @@ class NFA {
     NFA* Union(NFA* a, NFA* b);
     NFA* Cat(NFA* a, NFA* b);
     NFA* Star(NFA* a);
+    bool isIn(StateNode* s, std::vector<StateNode*> v);
+
   public:
     NFA();
-    void PrintTable();
     NFA(std::string regex);
     ~NFA();
+    void PrintTable();
+    void PrintStates(std::vector<StateNode*> s);
+    std::vector<StateNode*> Combine(std::vector<StateNode*> a, std::vector<StateNode*> b);
+    std::vector<StateNode*> epsClosure(StateNode* s);
+    std::vector<StateNode*> Move(StateNode* s, char c);
 };
 
 
