@@ -1,4 +1,4 @@
-OBJS = StateNode.o NFA.o main.o
+OBJS = StateNode.o utils.o NFA.o DFA.o main.o
 CC = g++
 DEBUG = -g
 CFLAGS = -c $(DEBUG)

@@ -5,8 +5,12 @@
 #include <string>
 #include <queue>
 #include <stack>
+#include <tuple>
 #include <iomanip>
+#include <fstream>
+#include <sstream>
 #include "NFA.h"
+#include "DFA.h"
 
 using namespace std;
 
@@ -14,20 +18,31 @@ string postFix(string regex);
 string catExpand(string regex);
 
 string regex;
-string* files;
+string line;
+int lineNum;
 
 int main(int argc, char *argv[]) {
   if(argc < 3)
     return 0;
   regex = argv[1];
-  files = new string[argc - 1];
-  for(int i = 0; i < argc - 2; i++)
-    files[i] = argv[i + 2];
   regex = catExpand(regex);
   regex = postFix(regex);
   cout << regex << endl;
   NFA* nfa = new NFA(regex);
-  nfa->PrintTable();
+  DFA* dfa = new DFA(nfa);
+  for(int i = 0; i < argc - 2; i++) {
+    ifstream infile(argv[i + 2]);
+    lineNum = 0;
+    while(std::getline(infile, line)) {
+      lineNum++;
+      istringstream iss(line);
+      if(!line.empty()) {
+        vector<tuple<int, int, string> > matches = dfa->Compute(line);
+        for(vector<tuple<int, int, string> >::iterator it = matches.begin(); it != matches.end(); ++it)
+          cout << argv[i + 2] << ", " << lineNum << ", " << get<0>(*it) << ", " << get<1>(*it) << ", " << get<2>(*it) << endl;
+      }
+    }
+  }
   return 0;
 }
 

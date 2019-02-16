@@ -2,8 +2,6 @@
 //NFA method definitions
 
 #include "NFA.h"
-#include <stack>
-#include <iostream>
 
 NFA::NFA() {
   this->states = std::vector<StateNode*> {};
@@ -48,12 +46,8 @@ NFA::NFA(std::string regex) {
   finalState = nfaStack.top()->finalState;
 }
 
-bool NFA::isIn(StateNode* s, std::vector<StateNode*> v) {
-  for(std::vector<StateNode*>::iterator i = v.begin(); i != v.end(); ++i) {
-    if((*i)->getID() == s->getID())
-      return true;
-  }
-  return false;
+StateNode* NFA::getStartState() {
+  return startState;
 }
 
 std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
@@ -63,26 +57,17 @@ std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
   while(!fringe.empty()) {
     StateNode* state = fringe.front();
     fringe.pop();
-    if(!isIn(state, visited)) {
+    if(!isStateInVector(state, visited)) {
       visited.push_back(state);
       if(transitionTable.find(std::make_pair(state, '\0')) != transitionTable.end()) {
         for(std::vector<StateNode*>::iterator i = transitionTable[std::make_pair(state, '\0')].begin(); i != transitionTable[std::make_pair(state, '\0')].end(); ++i) {
-          if(!isIn(*i, visited))
+          if(!isStateInVector(*i, visited))
             fringe.push(*i);
         }
       }
     }
   }
   return visited;
-}
-
-std::vector<StateNode*> NFA::Combine(std::vector<StateNode*> a, std::vector<StateNode*> b) {
-  std::vector<StateNode*> result = a;
-  for(std::vector<StateNode*>::iterator i = b.begin(); i != b.end(); ++i) {
-    if(!isIn(*i, a))
-      result.push_back(*i);
-  }
-  return result;
 }
 
 std::vector<StateNode*> NFA::Move(StateNode* s, char c) {
@@ -123,13 +108,6 @@ void NFA::PrintTable() {
     }
     std::cout << std::endl;
   }
-}
-
-void NFA::PrintStates(std::vector<StateNode*> s) {
-  for(std::vector<StateNode*>::iterator i = s.begin(); i != s.end(); ++i) {
-    std::cout << (*i)->getID() << " ";
-  }
-  std::cout << std::endl;
 }
 
 bool NFA::isInAlphabet(char c) {

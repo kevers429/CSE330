@@ -5,9 +5,12 @@
 #define DFA_H
 
 #include "StateNode.h"
+#include "NFA.h"
 #include <string>
 #include <map>
 #include <set>
+#include <tuple>
+#include "utils.h"
 
 class DFA {
   protected:
@@ -16,14 +19,15 @@ class DFA {
                                'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                                '1','2','3','4','5','6','7','8','9','.'};
     std::map<std::pair<std::vector<StateNode*>, char>, std::vector<StateNode*> > transitionTable;
-    StateNode* startState;
-    std::vector<StateNode*> finalStates;
+    std::vector<StateNode*> startState;
+    std::vector<std::vector<StateNode*> > finalStates;
     bool isInAlphabet(char c);
 
   public:
     DFA();
     DFA(NFA* nfa);
     ~DFA();
+    std::vector<std::tuple<int, int, std::string> > Compute(std::string str);
 };
 
 
