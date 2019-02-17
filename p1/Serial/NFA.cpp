@@ -177,6 +177,7 @@ NFA* NFA::Star(NFA* a) {
   NFA* t = new NFA();
   Glob(a, t);
   a->startState->setStart(false);
+  a->finalState->setFinal(false);
   StateNode* s = new StateNode(1, 0, newID(t));
   StateNode* f = new StateNode(0, 1, newID(t));
   t->transitionTable.insert(std::make_pair(std::make_pair(s, '\0'), std::vector<StateNode*> {f, a->startState}));

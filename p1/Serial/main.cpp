@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
   regex = argv[1];
   regex = catExpand(regex);
   regex = postFix(regex);
-  cout << regex << endl;
   NFA* nfa = new NFA(regex);
   DFA* dfa = new DFA(nfa);
   for(int i = 0; i < argc - 2; i++) {
