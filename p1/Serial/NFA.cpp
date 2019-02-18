@@ -3,13 +3,9 @@
 
 #include "NFA.h"
 
-NFA::NFA() {
-  this->states = std::vector<StateNode*> {};
-  this->stateNames = std::set<int> {};
-  this->startState = NULL;
-  this->finalState = NULL;
-}
+NFA::NFA() {}
 
+//constructs NFA from reverse polish notation string
 NFA::NFA(std::string regex) {
   std::stack<NFA*> nfaStack;
   while(regex != "") {
@@ -19,14 +15,14 @@ NFA::NFA(std::string regex) {
     regex.erase(0,1);
     if(isInAlphabet(token))
       nfaStack.push(buildSingle(token));
-    else if(token == '+') {
+    else if(token == '+') { //union top two NFAs on the stack
       a = nfaStack.top();
       nfaStack.pop();
       b = nfaStack.top();
       nfaStack.pop();
       nfaStack.push(Union(a, b));
     }
-    else if(token == '-') {
+    else if(token == '-') { //explicit concatenation symbol
       a = nfaStack.top();
       nfaStack.pop();
       b = nfaStack.top();
@@ -39,6 +35,7 @@ NFA::NFA(std::string regex) {
       nfaStack.push(Star(a));
     }
   }
+  //the stack has been exhausted and the NFA on top is the complete NFA
   states = nfaStack.top()->states;
   stateNames = nfaStack.top()->stateNames;
   transitionTable = nfaStack.top()->transitionTable;
@@ -50,6 +47,7 @@ StateNode* NFA::getStartState() {
   return startState;
 }
 
+//returns all possible states in a state's epsilon closure
 std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
   std::queue<StateNode*> fringe;
   fringe.push(s);
@@ -57,7 +55,7 @@ std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
   while(!fringe.empty()) {
     StateNode* state = fringe.front();
     fringe.pop();
-    if(!isStateInVector(state, visited)) {
+    if(!isStateInVector(state, visited)) { //have we been here before
       visited.push_back(state);
       if(transitionTable.find(std::make_pair(state, '\0')) != transitionTable.end()) {
         for(std::vector<StateNode*>::iterator i = transitionTable[std::make_pair(state, '\0')].begin(); i != transitionTable[std::make_pair(state, '\0')].end(); ++i) {
@@ -70,15 +68,16 @@ std::vector<StateNode*> NFA::epsClosure(StateNode* s) {
   return visited;
 }
 
+//returns all possible states that can be reached from one transition and epsilon closure
 std::vector<StateNode*> NFA::Move(StateNode* s, char c) {
   std::vector<StateNode*> visited;
   if(transitionTable.find(std::make_pair(s, c)) != transitionTable.end()) {
     visited = Combine(visited, transitionTable[std::make_pair(s, c)]);
     for(std::vector<StateNode*>::iterator i = transitionTable[std::make_pair(s, c)].begin(); i != transitionTable[std::make_pair(s, c)].end(); ++i) {
-      visited = Combine(visited, epsClosure(*i));
+      visited = Combine(visited, epsClosure(*i)); //union where we have been with were we are going
     }
   }
-  std::vector<StateNode*> epsOfS = epsClosure(s);
+  std::vector<StateNode*> epsOfS = epsClosure(s); //do epsilon closure first then move
   if(transitionTable.find(std::make_pair(s, '\0')) != transitionTable.end()) {
     for(std::vector<StateNode*>::iterator i = epsOfS.begin(); i != epsOfS.end(); ++i) {
       if(transitionTable.find(std::make_pair(*i, c)) != transitionTable.end()) {
@@ -91,29 +90,11 @@ std::vector<StateNode*> NFA::Move(StateNode* s, char c) {
   return visited;
 }
 
-void NFA::PrintTable() {
-  for(std::vector<StateNode*>::iterator i = states.begin(); i != states.end(); ++i) {
-    std::cout << "st: " << (*i)->getID() << ", ";
-    for(std::set<char>::iterator j = alphabet.begin(); j != alphabet.end(); ++j) {
-      std::map<std::pair<StateNode*, char>, std::vector<StateNode*> >::iterator k = transitionTable.find(std::make_pair(*i, *j));
-      if(k != transitionTable.end()) {
-        std::cout << "{";
-        for(std::vector<StateNode*>::iterator l = transitionTable[std::make_pair(*i, *j)].begin(); l != transitionTable[std::make_pair(*i, *j)].end(); ++l) {
-          std::cout << (*l)->getID() << " ";
-        }
-        std::cout << "}";
-      } else {
-        std::cout << " ";
-      }
-    }
-    std::cout << std::endl;
-  }
-}
-
 bool NFA::isInAlphabet(char c) {
   return alphabet.count(c);
 }
 
+//rename states when combining new NFAs
 int NFA::newID(NFA* a) {
   if(!a->stateNames.empty())
     return *(a->stateNames.insert(*a->stateNames.rbegin() + 1).first);
@@ -132,6 +113,7 @@ NFA* NFA::buildSingle(char c) {
   return t;
 }
 
+//renames states and add states to targete NFA
 void NFA::Glob(NFA* src, NFA* tar) {
   for(std::vector<StateNode*>::iterator it = src->states.begin(); it != src->states.end(); it++) {
     (*it)->setID(newID(tar));
@@ -141,6 +123,7 @@ void NFA::Glob(NFA* src, NFA* tar) {
   tar->transitionTable.insert(src->transitionTable.begin(), src->transitionTable.end());
 }
 
+//returns union of two NFAs
 NFA* NFA::Union(NFA* a, NFA* b) {
   NFA* t = new NFA();
   Glob(a, t);
@@ -161,6 +144,7 @@ NFA* NFA::Union(NFA* a, NFA* b) {
   return t;
 }
 
+//returns concatenation of two NFAs
 NFA* NFA::Cat(NFA* a, NFA* b) {
   NFA* t = new NFA();
   Glob(a, t);
@@ -173,6 +157,7 @@ NFA* NFA::Cat(NFA* a, NFA* b) {
   return t;
 }
 
+//returns closure of NFA*
 NFA* NFA::Star(NFA* a) {
   NFA* t = new NFA();
   Glob(a, t);
@@ -187,8 +172,4 @@ NFA* NFA::Star(NFA* a) {
   t->states.push_back(s);
   t->states.push_back(f);
   return t;
-}
-
-NFA::~NFA() {
-  //haha
 }

@@ -33,9 +33,7 @@ class NFA {
   public:
     NFA();
     NFA(std::string regex);
-    ~NFA();
     StateNode* getStartState();
-    void PrintTable();
     std::vector<StateNode*> epsClosure(StateNode* s);
     std::vector<StateNode*> Move(StateNode* s, char c);
 };

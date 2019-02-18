@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
       if(!line.empty()) {
         vector<tuple<int, int, string> > matches = dfa->Compute(line);
         for(vector<tuple<int, int, string> >::iterator it = matches.begin(); it != matches.end(); ++it)
-          cout << argv[i + 2] << ", " << lineNum << ", " << get<0>(*it) << ", " << get<1>(*it) << ", " << get<2>(*it) << endl;
+          cout << argv[i + 2] << ", " << lineNum << ", " << get<0>(*it) << ", " << get<1>(*it) << ": " << get<2>(*it) << endl;
       }
     }
   }

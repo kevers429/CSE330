@@ -27,8 +27,3 @@ bool isVectorInVector(std::vector<StateNode*> s, std::vector<std::vector<StateNo
   }
   return false;
 }
-
-void PrintStates(std::vector<StateNode*> s) {
-  for(std::vector<StateNode*>::iterator i = s.begin(); i != s.end(); ++i)
-    std::cout << (*i)->getID() << " ";
-}
